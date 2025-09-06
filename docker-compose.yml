@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  nginx:
+    build: ./nginx
+    image: alertflex/cnode-web:1.0
+    container_name: cnode-web
+    network_mode: "host"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+      args:
+        ADMIN_PWD: ${ADMIN_PWD}
+        PROJECT_ID: ${PROJECT_ID}
+        OPENSEARCH_URL: ${OPENSEARCH_URL}
+        OPENSEARCH_PORT: ${OPENSEARCH_PORT}
+        OPENSEARCH_USER: ${OPENSEARCH_USER}
+        OPENSEARCH_PWD: ${OPENSEARCH_PWD}
+    image: alertflex/cnode-db:1.0
+    container_name: cnode-db
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ADMIN_PWD}
+    network_mode: "host"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    restart: unless-stopped
+  activemq:
+    build:
+      context: ./activemq
+      dockerfile: Dockerfile
+      args:
+        ADMIN_PWD: ${ADMIN_PWD}
+    image: alertflex/cnode-mq:1.0
+    container_name: cnode-mq
+    env_file:
+      - .env
+    network_mode: "host"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+  alertflex:
+    build:
+      context: ./alertflex
+      dockerfile: Dockerfile
+      args:
+        ADMIN_PWD: ${ADMIN_PWD}
+    image: alertflex/cnode-as:1.0
+    container_name: cnode-as
+    env_file:
+      - .env
+    depends_on:
+      - mysql
+      - activemq
+    network_mode: "host"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+volumes:
+  mysql_data:

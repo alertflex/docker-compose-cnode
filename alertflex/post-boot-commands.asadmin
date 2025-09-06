@@ -1,0 +1,20 @@
+create-jdbc-connection-pool --datasourceclassname com.mysql.jdbc.jdbc2.optional.MysqlXADataSource --restype javax.sql.XADataSource --property PortNumber=3306:Password=_admin_pwd:User=admin:ServerName=127.0.0.1:DatabaseName=alertflex alertflex_auth
+create-jdbc-connection-pool --datasourceclassname com.mysql.jdbc.jdbc2.optional.MysqlXADataSource --restype javax.sql.XADataSource --property PortNumber=3306:Password=_admin_pwd:User=admin:ServerName=127.0.0.1:DatabaseName=afevents afevents_auth
+create-jdbc-resource --connectionpoolid alertflex_auth jdbc/alertflex_auth_jndi
+create-jdbc-resource --connectionpoolid afevents_auth jdbc/afevents_auth_jndi
+create-auth-realm --classname com.sun.enterprise.security.auth.realm.jdbc.JDBCRealm --property user-name-column=userid:password-column=password:group-name-column=groupid:jaas-context=jdbcRealm:datasource-jndi=jdbc/alertflex_auth_jndi:group-table=groups:user-table=users:digestrealm-password-enc-algorithm=AES:digest-algorithm=SHA-256:encoding=Hex:charset=UTF-8 JDBCRealm
+deploy --type rar --name activemq-rar /opt/payara/alertflex/activemq-rar-5.16.1.rar
+create-resource-adapter-config --threadpoolid thread-pool-1 --property ServerUrl='tcp://127.0.0.1:61616':UserName='admin':Password='_admin_pwd' activemq-rar
+create-connector-connection-pool --raname activemq-rar --connectiondefinition javax.jms.ConnectionFactory --ping true jms/activeMQConnectionFactory-Connection-Pool
+create-connector-resource --poolname jms/activeMQConnectionFactory-Connection-Pool --enabled true jms/activeMQConnectionFactory
+create-system-properties AmqUrl="tcp\://127.0.0.1\:61616"
+create-system-properties AmqUser=admin
+create-system-properties AmqPwd=_admin_pwd
+delete-jvm-options '-Xms512m'
+delete-jvm-options '-Xmx512m'
+create-jvm-options '-Xms3g'
+create-jvm-options '-Xmx3g'
+deploy /opt/payara/alertflex/alertflex-ctrl.war
+
+
+
